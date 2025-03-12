@@ -1,0 +1,45 @@
+name: Generate RSS Feed
+
+on:
+  schedule:
+    # 日本時間 10:10 は UTC 01:10
+    - cron: "10 1 * * *"
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-rss:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download JSON news file
+        run: |
+          curl -sS https://www.jst.go.jp/moonshot/js/newsitem_js.json -o newsitem_js.json
+
+      - name: Filter news (last 14 days)
+        run: |
+          # 以下は例です。news_date のフォーマット（例："2023/02/01"）に合わせて調整してください
+          START_DATE=$(date -d "-14 days" +"%Y/%m/%d")
+          echo "記事抽出開始日: $START_DATE"
+          jq --arg start "$START_DATE" 'map(select(.news_date >= $start))' newsitem_js.json > filtered_news.json
+
+      - name: 差分の抽出（前回との差分更新）
+        run: |
+          # 以前のフィルタ結果があれば、差分を抽出する処理を実装します
+          # 例: 前回の filtered_news.json を state フォルダから取得し、diff コマンド等で変更箇所を確認
+          if [ -f state/filtered_news.json ]; then
+            diff state/filtered_news.json filtered_news.json || true
+          fi
+          # 新たなフィルタ結果を state として保存
+          mkdir -p state
+          cp filtered_news.json state/filtered_news.json
+
+      - name: Run RSS Generator
+        uses: codesandtags/rss-generator-action@main
+        with:
+          # 例: 入力ファイルとしてフィルタ済み JSON を指定
+          input: filtered_news.json
+          # 必要に応じて他のパラメータ（差分更新のオプション等）があれば指定してください
