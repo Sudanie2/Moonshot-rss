@@ -3,7 +3,7 @@ name: Generate RSS Feed
 on:
   schedule:
     - cron: "10 1 * * *"  # UTC 01:10 = JST 10:10
-  workflow_dispatch:  # 手動実行も可能
+  workflow_dispatch:
 
 jobs:
   build:
@@ -44,11 +44,13 @@ jobs:
           # 14日以内の記事を抽出し、RSSに追加
           jq -r --arg base_url "https://www.jst.go.jp" --arg start_date "$FOURTEEN_DAYS_AGO" --arg end_date "$TODAY" '
             map(select(.news_date >= $start_date and .news_date <= $end_date)) |
-            .[] | 
+            .[] |
             "<item>
               <title>\(.top_and_news_title | @html)</title>
-              <link>\($base_url + (.news_url | sub("^/"; "")) | @html)</link>
-              <pubDate>\(.news_date)</pubDate>
+              <link>" + 
+                (if .news_url | startswith("http") then .news_url else ($base_url + (.news_url | sub("^/"; ""))) end) +
+              "</link>
+              <pubDate>" + (.news_date | strptime("%Y/%m/%d") | strftime("%a, %d %b %Y %H:%M:%S +0000")) + "</pubDate>
             </item>"
           ' news.json >> new_rss.xml
 
