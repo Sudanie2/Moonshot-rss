@@ -6,17 +6,17 @@ RSS_FILE="rss.xml"
 TEMP_JSON="news.json"
 TEMP_RSS="rss_temp.xml"
 DAYS_LIMIT=14
-TODAY=$(date -u +"%Y/%m/%d")
-START_DATE=$(date -u -d "-${DAYS_LIMIT} days" +"%Y/%m/%d")
+TODAY=$(date -u +"%Y%m%d")
+START_DATE=$(date -u -d "-${DAYS_LIMIT} days" +"%Y%m%d")
 
 # JSONデータを取得
 curl -s "$JSON_URL" -o "$TEMP_JSON"
 
-# 最新14日間のデータを抽出
+# 最新14日間のデータを抽出（`news_date` を `YYYYMMDD` に変換して正しくソート）
 jq --arg start_date "$START_DATE" --arg today "$TODAY" '
-  .[] |
-  select(.news_date >= $start_date and .news_date <= $today) |
-  {title: .top_and_news_title, link: .news_url, date: .news_date}
+  map(select(.news_date | gsub("/"; "") | tonumber >= ($start_date | tonumber) and tonumber <= ($today | tonumber)))
+  | sort_by(.news_date | gsub("/"; "") | tonumber) | reverse
+  | map({title: .top_and_news_title, link: .news_url, date: .news_date})
 ' "$TEMP_JSON" > filtered_news.json
 
 # RSSヘッダー作成
