@@ -12,11 +12,15 @@ START_DATE=$(date -u -d "-${DAYS_LIMIT} days" +"%Y%m%d")
 # JSONデータを取得
 curl -s "$JSON_URL" -o "$TEMP_JSON"
 
-# 最新14日間のデータを抽出（`news_date` を `YYYYMMDD` に変換して正しくソート）
+# 最新14日間のデータを抽出し、日付を RFC-2822 形式に変換
 jq --arg start_date "$START_DATE" --arg today "$TODAY" '
   map(select(.news_date | gsub("/"; "") | tonumber >= ($start_date | tonumber) and tonumber <= ($today | tonumber)))
   | sort_by(.news_date | gsub("/"; "") | tonumber) | reverse
-  | map({title: .top_and_news_title, link: .news_url, date: .news_date})
+  | map({
+      title: .top_and_news_title,
+      link: if .news_url | startswith("/") then "https://www.jst.go.jp" + .news_url else .news_url end,
+      date: .news_date | sub("/"; "-"; "g") | strptime("%Y-%m-%d") | mktime | strftime("%a, %d %b %Y %H:%M:%S GMT")
+    })
 ' "$TEMP_JSON" > filtered_news.json
 
 # RSSヘッダー作成
