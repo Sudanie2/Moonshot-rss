@@ -26,22 +26,17 @@ jobs:
 
       - name: Fetch JSON and Convert to RSS
         run: |
-          # 最新のJSONを取得
           curl -s -o news.json https://www.jst.go.jp/moonshot/js/newsitem_js.json
 
-          # 基準日
           TODAY=$(date -u +"%Y/%m/%d")
           FOURTEEN_DAYS_AGO=$(date -u -d "14 days ago" +"%Y/%m/%d")
 
-          # RSSのヘッダーを作成
           echo '<?xml version="1.0" encoding="UTF-8"?>' > new_rss.xml
           echo '<rss version="2.0"><channel>' >> new_rss.xml
           echo '<title>Moonshot News</title>' >> new_rss.xml
           echo '<link>https://www.jst.go.jp/moonshot</link>' >> new_rss.xml
           echo '<description>ムーンショット型研究開発制度の新着ニュース</description>' >> new_rss.xml
-          echo "<lastBuildDate>$(date -R)</lastBuildDate>" >> new_rss.xml
 
-          # 14日以内の記事を抽出し、RSSに追加
           jq -r --arg base_url "https://www.jst.go.jp" --arg start_date "$FOURTEEN_DAYS_AGO" --arg end_date "$TODAY" '
             map(select(.news_date >= $start_date and .news_date <= $end_date)) |
             .[] |
@@ -50,7 +45,10 @@ jobs:
               <link>" + 
                 (if .news_url | startswith("http") then .news_url else ($base_url + (.news_url | sub("^/"; ""))) end) +
               "</link>
-              <pubDate>" + (.news_date | strptime("%Y/%m/%d") | strftime("%a, %d %b %Y %H:%M:%S +0000")) + "</pubDate>
+              <guid isPermaLink=\"true\">" + 
+                (if .news_url | startswith("http") then .news_url else ($base_url + (.news_url | sub("^/"; ""))) end) +
+              "</guid>
+              <pubDate>" + (.news_date + " 12:00:00 +0000") + "</pubDate>
             </item>"
           ' news.json >> new_rss.xml
 
