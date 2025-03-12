@@ -1,9 +1,0 @@
-name: "RSS Generator Action"
-description: "Generate RSS feed from JSON data."
-inputs:
-  input:
-    description: "Input JSON file"
-    required: true
-runs:
-  using: "docker"
-  image: "Dockerfile"
