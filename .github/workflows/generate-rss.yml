@@ -15,31 +15,69 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
       - name: Download JSON news file
         run: |
           curl -sS https://www.jst.go.jp/moonshot/js/newsitem_js.json -o newsitem_js.json
 
       - name: Filter news (last 14 days)
         run: |
-          # 以下は例です。news_date のフォーマット（例："2023/02/01"）に合わせて調整してください
+          # 過去14日以内の記事を抽出（news_date のフォーマットが "YYYY/MM/DD" と仮定）
           START_DATE=$(date -d "-14 days" +"%Y/%m/%d")
           echo "記事抽出開始日: $START_DATE"
           jq --arg start "$START_DATE" 'map(select(.news_date >= $start))' newsitem_js.json > filtered_news.json
 
-      - name: 差分の抽出（前回との差分更新）
+      - name: Save previous filtered news for diff
         run: |
-          # 以前のフィルタ結果があれば、差分を抽出する処理を実装します
-          # 例: 前回の filtered_news.json を state フォルダから取得し、diff コマンド等で変更箇所を確認
-          if [ -f state/filtered_news.json ]; then
-            diff state/filtered_news.json filtered_news.json || true
-          fi
-          # 新たなフィルタ結果を state として保存
           mkdir -p state
+          if [ -f state/filtered_news.json ]; then
+            cp state/filtered_news.json previous_filtered_news.json
+          else
+            touch previous_filtered_news.json
+          fi
           cp filtered_news.json state/filtered_news.json
 
-      - name: Run RSS Generator
-        uses: codesandtags/rss-generator-action@main
-        with:
-          # 例: 入力ファイルとしてフィルタ済み JSON を指定
-          input: filtered_news.json
-          # 必要に応じて他のパラメータ（差分更新のオプション等）があれば指定してください
+      - name: Generate RSS feed
+        run: |
+          BASE_URL="https://www.jst.go.jp"
+          RSS_FILE="new_rss.xml"
+          echo '<?xml version="1.0" encoding="UTF-8"?>' > $RSS_FILE
+          echo '<rss version="2.0"><channel>' >> $RSS_FILE
+          echo '<title>Moonshot News</title>' >> $RSS_FILE
+          echo "<link>${BASE_URL}/moonshot</link>" >> $RSS_FILE
+          echo '<description>ムーンショット型研究開発制度の新着情報</description>' >> $RSS_FILE
+
+          # filtered_news.json から各記事の item を生成
+          cat filtered_news.json | jq -r --arg base "$BASE_URL" '
+            .[] |
+            "<item><title>\(.top_and_news_title | @html)</title><link>" +
+            (if (.news_url | test("^/")) then ($base + .news_url) else .news_url end) +
+            "</link><pubDate>\(.news_date)</pubDate></item>"' >> $RSS_FILE
+
+          echo '</channel></rss>' >> $RSS_FILE
+
+      - name: Diff and update RSS file
+        run: |
+          # 既存の rss.xml と新規生成した new_rss.xml を比較し、変更があれば上書き
+          if cmp -s new_rss.xml rss.xml; then
+            echo "RSS フィードに変更はありません。"
+            exit 0
+          else
+            mv new_rss.xml rss.xml
+          fi
+
+      - name: Commit and Push RSS
+        run: |
+          if git diff --quiet rss.xml; then
+            echo "rss.xml に変更はありません。コミットをスキップします。"
+            exit 0
+          fi
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add rss.xml
+          git commit -m "Updated RSS feed"
+          git push
