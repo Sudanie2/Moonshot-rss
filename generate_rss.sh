@@ -6,20 +6,21 @@ RSS_FILE="rss.xml"
 TEMP_JSON="news.json"
 TEMP_RSS="rss_temp.xml"
 DAYS_LIMIT=14
-TODAY=$(date -u +"%Y%m%d")
-START_DATE=$(date -u -d "-${DAYS_LIMIT} days" +"%Y%m%d")
+TODAY=$(date -u +"%Y-%m-%d")
+START_DATE=$(date -u -d "-${DAYS_LIMIT} days" +"%Y-%m-%d")
 
 # JSONデータを取得
 curl -s "$JSON_URL" -o "$TEMP_JSON"
 
 # 最新14日間のデータを抽出し、日付を RFC-2822 形式に変換
 jq --arg start_date "$START_DATE" --arg today "$TODAY" '
-  map(select(.news_date | gsub("/"; "") | tonumber >= ($start_date | tonumber) and tonumber <= ($today | tonumber)))
-  | sort_by(.news_date | gsub("/"; "") | tonumber) | reverse
+  map(.news_date |= gsub("/"; "-")) # YYYY/MM/DD → YYYY-MM-DD に変換
+  | map(select(.news_date >= $start_date and .news_date <= $today))
+  | sort_by(.news_date) | reverse
   | map({
       title: .top_and_news_title,
       link: if .news_url | startswith("/") then "https://www.jst.go.jp" + .news_url else .news_url end,
-      date: .news_date | sub("/"; "-"; "g") | strptime("%Y-%m-%d") | mktime | strftime("%a, %d %b %Y %H:%M:%S GMT")
+      date: (.news_date + " 00:00:00 UTC") | strptime("%Y-%m-%d %H:%M:%S %Z") | mktime | strftime("%a, %d %b %Y %H:%M:%S GMT")
     })
 ' "$TEMP_JSON" > filtered_news.json
 
