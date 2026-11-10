@@ -4,12 +4,6 @@
 <link>https://www.jst.go.jp/moonshot</link>
 <description>ムーンショット型研究開発制度の新着ニュース</description>
 <item>
-    <title>[目標6 御手洗PM] 株式会社QunaSysと産業技術総合研究所が「量子CAEの研究開発に向けた常微分方程式の線形化ライブラリ「lin-ode」を開発」をプレスリリース</title>
-    <link>https://www.aist.go.jp/aist_j/press_release/pr2026/pr20261026/pr20261026.html</link>
-    <guid isPermaLink="true">https://www.aist.go.jp/aist_j/press_release/pr2026/pr20261026/pr20261026.html</guid>
-    <pubDate>2026/10/26 12:00:00 +0000</pubDate>
-  </item>
-<item>
     <title>[目標2 合原PM] 遺伝子発現の形から種間遺伝子対応を推測 ～ビッグデータと数学で種差解明に挑む～</title>
     <link>https://www.jst.go.jp/pr/announce/20261029-3/index.html</link>
     <guid isPermaLink="true">https://www.jst.go.jp/pr/announce/20261029-3/index.html</guid>
@@ -20,5 +14,11 @@
     <link>https://www.kanazawa-u.ac.jp/wp/wp-content/uploads/2026/10/20261028.pdf</link>
     <guid isPermaLink="true">https://www.kanazawa-u.ac.jp/wp/wp-content/uploads/2026/10/20261028.pdf</guid>
     <pubDate>2026/10/28 12:00:00 +0000</pubDate>
+  </item>
+<item>
+    <title>[目標9 細田PM] 東北大学が「東北大学特許を活用した MangaChat、DBS 財団助成金を獲得 ―AI で子どものメンタルヘルスを支援―」をプレスリリース</title>
+    <link>https://www.is.tohoku.ac.jp/media/files/_u/topic/file/pr_machatdbs_20261109.pdf</link>
+    <guid isPermaLink="true">https://www.is.tohoku.ac.jp/media/files/_u/topic/file/pr_machatdbs_20261109.pdf</guid>
+    <pubDate>2026/11/09 12:00:00 +0000</pubDate>
   </item>
 </channel></rss>
